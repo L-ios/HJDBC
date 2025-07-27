@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: QueryRestful
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/mysti?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC
+    username: root
+    password: PassW0rd
+server:
+  port: 8080
+logging:
+  pattern:
+    #console: '%d %prefix(%thread %level %logge) %message \n'
+  #console:
+    level: '%highlight([%level])'
+  level:
+    root: info
+# 未对齐（原始格式）
+#  2023-01-01 12:00:00 [INFO] com.example.Service - Message
+#  2023-01-01 12:00:01 [DEBUG] com.example.Service - Debug
+
