@@ -4,9 +4,11 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RequestBody
+import java.util.UUID
 
 import javax.sql.DataSource;
 import kotlin.io.path.Path
+import kotlin.uuid.Uuid
 
 @RestController
 class QueryEngineController {
@@ -34,7 +36,6 @@ class QueryEngineController {
                 rset.add(row)
             }
 
-
             return QueryResponse().apply {
                 retCode = 0
                 retInfo = "SUCCESS"
@@ -42,7 +43,7 @@ class QueryEngineController {
                 data = QueryResult().apply {
                     columns =  good
                     results = rset.toList()
-                    queryId = ""
+                    queryId = UUID.randomUUID().toString()
                     severity = ""
                     suggestion = ""
                 }
