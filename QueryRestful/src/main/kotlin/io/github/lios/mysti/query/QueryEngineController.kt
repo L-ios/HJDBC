@@ -1,14 +1,11 @@
 package io.github.lios.mysti.query
 
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RestController
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import java.util.UUID
-
-import javax.sql.DataSource;
-import kotlin.io.path.Path
-import kotlin.uuid.Uuid
+import org.springframework.web.bind.annotation.RestController
+import java.util.*
+import javax.sql.DataSource
 
 @RestController
 class QueryEngineController {
@@ -16,58 +13,67 @@ class QueryEngineController {
     private val database: DataSource? = null
 
     @PostMapping("/query/sql")
-    public fun sql(@RequestBody req: QueryRequest): QueryResponse {
-        var connection = database?.connection
-        var prepareStatement = connection?.prepareStatement(req.sql)
-        var execute = prepareStatement?.execute()
-        if (execute != null && execute) {
-            var resultSet = prepareStatement?.resultSet
-            var metaData = resultSet?.metaData
-            val columnCount = metaData?.columnCount?: 0
-            val good = (1..columnCount).associate {
-                metaData?.getColumnLabel(it)!! to mapOf(
-                    "type" to metaData?.getColumnTypeName(it)!!,
-                    "autoIncrement" to metaData?.isAutoIncrement(it)!!,
-                    "caseSensitive" to metaData?.isCaseSensitive(it)!!,
-                    "searchable" to metaData?.isSearchable(it)!!,
-                    "currency" to metaData?.isCurrency(it)!!,
-                    "nullable" to metaData?.isNullable(it)!!,
-                    "signed" to metaData?.isSigned(it)!!,
-                    "columnDisplaySize" to metaData?.getColumnDisplaySize(it)!!,
-                    "columnLabel" to metaData?.getColumnLabel(it)!!,
-                    "columnName" to metaData?.getColumnName(it)!!,
-                    "schemaName" to metaData?.getSchemaName(it)!!,
-                    "precision" to metaData?.getPrecision(it)!!,
-                    "scale" to metaData?.getScale(it)!!,
-                    "tableName" to metaData?.getTableName(it)!!,
-                    "catalogName" to metaData?.getCatalogName(it)!!,
-                    "columnType" to metaData?.getColumnType(it)!!,
-                    "columnTypeName" to metaData?.getColumnTypeName(it)!!,
-                    "readOnly" to metaData?.isReadOnly(it)!!,
-                    "writable" to metaData?.isWritable(it)!!,
-                    "definitelyWritable" to metaData?.isDefinitelyWritable(it)!!,
-                    "columnClassName" to metaData?.getColumnClassName(it)!!,
-                )
-            } ?: emptyMap()
-
-            val rset = mutableListOf<Map<String, Any>>()
-            while (resultSet?.next()!!) {
-                val row = (1..columnCount).associate {
-                    metaData?.getColumnLabel(it)!! to resultSet.getObject(it)
+    fun sql(@RequestBody req: QueryRequest): QueryResponse {
+        database?.connection.use { con ->
+            con?.prepareStatement(req.sql)!!.use { ps ->
+                if (!ps.execute()) {
+                    return QueryResponse().apply{
+                        retCode = 1
+                        retInfo = "FAILED"
+                    }
                 }
-                rset.add(row)
-            }
 
-            return QueryResponse().apply {
-                retCode = 0
-                retInfo = "SUCCESS"
-                i18Key = ""
-                data = QueryResult().apply {
-                    columns =  good
-                    results = rset.toList()
-                    queryId = UUID.randomUUID().toString()
-                    severity = ""
-                    suggestion = ""
+                ps.resultSet?.use { rs ->
+                    val metaData = rs.metaData!!
+                    val columnCount = metaData.columnCount
+                    val columnMetas = (1..columnCount).associate {
+                        metaData.getColumnLabel(it)!! to mapOf(
+                            "type" to metaData.getColumnTypeName(it)!!,
+                            "meta" to ColumnMeta(
+                                autoIncrement =  metaData.isAutoIncrement(it),
+                                caseSensitive =  metaData.isCaseSensitive(it),
+                                searchable =  metaData.isSearchable(it),
+                                currency =  metaData.isCurrency(it),
+                                nullable =  metaData.isNullable(it),
+                                signed =  metaData.isSigned(it),
+                                columnDisplaySize =  metaData.getColumnDisplaySize(it),
+                                columnLabel =  metaData.getColumnLabel(it)!!,
+                                columnName =  metaData.getColumnName(it)!!,
+                                schemaName =  metaData.getSchemaName(it)!!,
+                                precision =  metaData.getPrecision(it),
+                                scale =  metaData.getScale(it),
+                                tableName =  metaData.getTableName(it)!!,
+                                catalogName =  metaData.getCatalogName(it)!!,
+                                columnType =  metaData.getColumnType(it),
+                                columnTypeName =  metaData.getColumnTypeName(it)!!,
+                                readOnly =  metaData.isReadOnly(it),
+                                writable =  metaData.isWritable(it),
+                                definitelyWritable =  metaData.isDefinitelyWritable(it),
+                                columnClassName =  metaData.getColumnClassName(it)!!,
+                            )
+                        )
+                    }
+
+                    val rset = mutableListOf<Map<String, Any>>()
+                    while (rs.next()) {
+                        val row = (1..columnCount).associate {
+                            metaData.getColumnLabel(it)!! to rs.getObject(it)
+                        }
+                        rset.add(row)
+                    }
+
+                    return QueryResponse().apply {
+                        retCode = 0
+                        retInfo = "SUCCESS"
+                        i18Key = ""
+                        data = QueryResult().apply {
+                            columns =  columnMetas
+                            results = rset.toList()
+                            queryId = UUID.randomUUID().toString()
+                            severity = ""
+                            suggestion = ""
+                        }
+                    }
                 }
             }
         }
@@ -89,8 +95,31 @@ class QueryResponse {
 
 class QueryResult {
     var columns: Map<String, Map<String, Any>> = emptyMap()
-    var results: List<Map<String, Any>> = emptyList();
+    var results: List<Any> = emptyList()
     var queryId: String = ""
     var severity: String = ""
     var suggestion: String = ""
 }
+
+data class ColumnMeta(
+    val autoIncrement: Boolean,
+    val caseSensitive: Boolean,
+    val searchable: Boolean,
+    val currency: Boolean,
+    val nullable: Int,
+    val signed: Boolean,
+    val columnDisplaySize: Int,
+    val columnLabel: String,
+    val columnName: String,
+    val schemaName: String,
+    val precision: Int,
+    val scale: Int,
+    val tableName: String,
+    val catalogName: String,
+    val columnType: Int,
+    val columnTypeName: String,
+    val readOnly: Boolean,
+    val writable: Boolean,
+    val definitelyWritable: Boolean,
+    val columnClassName: String,
+)
