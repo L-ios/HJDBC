@@ -1,5 +1,5 @@
 ### query example
-POST http://127.0.0.1:8080/query/sql HTTP/1.1
+POST http://127.0.0.1:8080/query/sql?ignoreColumnName=true HTTP/1.1
 Content-Type: application/json
 
 {
