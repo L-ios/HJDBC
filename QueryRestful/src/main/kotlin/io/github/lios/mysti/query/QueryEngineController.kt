@@ -25,8 +25,30 @@ class QueryEngineController {
             var metaData = resultSet?.metaData
             val columnCount = metaData?.columnCount?: 0
             val good = (1..columnCount).associate {
-                metaData?.getColumnLabel(it)!! to mapOf("type" to metaData?.getColumnTypeName(it)!!)
-            }?: emptyMap()
+                metaData?.getColumnLabel(it)!! to mapOf(
+                    "type" to metaData?.getColumnTypeName(it)!!,
+                    "autoIncrement" to metaData?.isAutoIncrement(it)!!,
+                    "caseSensitive" to metaData?.isCaseSensitive(it)!!,
+                    "searchable" to metaData?.isSearchable(it)!!,
+                    "currency" to metaData?.isCurrency(it)!!,
+                    "nullable" to metaData?.isNullable(it)!!,
+                    "signed" to metaData?.isSigned(it)!!,
+                    "columnDisplaySize" to metaData?.getColumnDisplaySize(it)!!,
+                    "columnLabel" to metaData?.getColumnLabel(it)!!,
+                    "columnName" to metaData?.getColumnName(it)!!,
+                    "schemaName" to metaData?.getSchemaName(it)!!,
+                    "precision" to metaData?.getPrecision(it)!!,
+                    "scale" to metaData?.getScale(it)!!,
+                    "tableName" to metaData?.getTableName(it)!!,
+                    "catalogName" to metaData?.getCatalogName(it)!!,
+                    "columnType" to metaData?.getColumnType(it)!!,
+                    "columnTypeName" to metaData?.getColumnTypeName(it)!!,
+                    "readOnly" to metaData?.isReadOnly(it)!!,
+                    "writable" to metaData?.isWritable(it)!!,
+                    "definitelyWritable" to metaData?.isDefinitelyWritable(it)!!,
+                    "columnClassName" to metaData?.getColumnClassName(it)!!,
+                )
+            } ?: emptyMap()
 
             val rset = mutableListOf<Map<String, Any>>()
             while (resultSet?.next()!!) {
@@ -66,7 +88,7 @@ class QueryResponse {
 }
 
 class QueryResult {
-    var columns: Map<String, Map<String, String>> = emptyMap()
+    var columns: Map<String, Map<String, Any>> = emptyMap()
     var results: List<Map<String, Any>> = emptyList();
     var queryId: String = ""
     var severity: String = ""
