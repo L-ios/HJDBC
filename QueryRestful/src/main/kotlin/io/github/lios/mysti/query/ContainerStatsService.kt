@@ -78,7 +78,7 @@ class ContainerStatsService(
         containerName = containerName.split("_")[2]
         return ContainerStats(
             id = ContainerStatsId(
-                time = Instant.now(),
+                time = Instant.parse(stats.preread!!),
                 containerId = container.id,
             ),
             containerName = containerName,
